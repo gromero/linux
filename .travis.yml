@@ -1,28 +1,30 @@
-dist: trusty
-sudo: false
 language: c
-compiler: gcc
-
-addons:
-  apt:
-    packages:
-    - flex
-    - bison
-    - sparse
+dist: xenial
+sudo: required
+services: docker
 
 os:
+  - linux
   - linux-ppc64le
 
 branches:
   only:
     - ci-test
 
+matrix:
+  include:
+    - env: TARGET=kernel@ppc64le@ubuntu@18.10
+    - env: TARGET=kernel@ppc64@ubuntu@18.10
+    - env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=pmac32_defconfig
+    - env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc64e_defconfig
+    - env: TARGET=ppctests@ppc64le@ubuntu@18.10
+      os:  linux-ppc64le
+    - env: TARGET=ppctests@ppc64@ubuntu@18.10
+    - env: TARGET=selftests@ppc64le@ubuntu@18.10
+      os:  linux-ppc64le
+    - env: TARGET=selftests@ppc64@ubuntu@18.10
+
 script:
-  - export CROSS_COMPILE=
-  - export ARCH=powerpc
-  - export DEFCONFIG=ppc64le_defconfig
-  - export KBUILD_OUTPUT=build
-  - export JFACTOR=$(nproc)
-  - export SILENT=0
-  - export KBUILD_CHECKSRC=2
-  - arch/powerpc/tools/ci/build.sh
+  - git clone -q --depth 1 https://github.com/mpe/ci-scripts.git
+  - mkdir -p build
+  - make -C ci-scripts/build CI_OUTPUT=$PWD/build JFACTOR=$(nproc) SRC=$PWD $TARGET
