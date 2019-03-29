@@ -9,14 +9,25 @@ branches:
 
 matrix:
   include:
+    # 64-bit configs
     - os:  linux
-      env: TARGET=kernel@ppc64le@ubuntu@18.10
+      env: TARGET=kernel@ppc64le@ubuntu@18.10 DEFCONFIG=ppc64le_allmodconfig	# PPC_BOOK3S_64 && LITTLE_ENDIAN
     - os:  linux
-      env: TARGET=kernel@ppc64@ubuntu@18.10
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=allmodconfig		# PPC_BOOK3S_64 && BIG_ENDIAN
     - os:  linux
-      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=pmac32_defconfig
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc64_book3e_allmodconfig # PPC_BOOK3E_64
+    # 32-bit configs
     - os:  linux
-      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc64e_defconfig
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc32_allmodconfig	# PPC_BOOK3S_32
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc40x_defconfig		# PPC_40x
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc44x_defconfig		# PPC_44x
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=mpc885_ads_defconfig	# PPC_8xx
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=corenet32_smp_defconfig	# PPC_85xx
+    # selftests
     - os:  linux-ppc64le
       env: TARGET=ppctests@ppc64le@ubuntu@18.10
     - os:  linux
