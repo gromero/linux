@@ -3,26 +3,28 @@ dist: xenial
 sudo: required
 services: docker
 
-os:
-  - linux
-  - linux-ppc64le
-
 branches:
   only:
     - ci-test
 
 matrix:
   include:
-    - env: TARGET=kernel@ppc64le@ubuntu@18.10
-    - env: TARGET=kernel@ppc64@ubuntu@18.10
-    - env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=pmac32_defconfig
-    - env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc64e_defconfig
-    - env: TARGET=ppctests@ppc64le@ubuntu@18.10
-      os:  linux-ppc64le
-    - env: TARGET=ppctests@ppc64@ubuntu@18.10
-    - env: TARGET=selftests@ppc64le@ubuntu@18.10
-      os:  linux-ppc64le
-    - env: TARGET=selftests@ppc64@ubuntu@18.10
+    - os:  linux
+      env: TARGET=kernel@ppc64le@ubuntu@18.10
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=pmac32_defconfig
+    - os:  linux
+      env: TARGET=kernel@ppc64@ubuntu@18.10 DEFCONFIG=ppc64e_defconfig
+    - os:  linux-ppc64le
+      env: TARGET=ppctests@ppc64le@ubuntu@18.10
+    - os:  linux
+      env: TARGET=ppctests@ppc64@ubuntu@18.10
+    - os:  linux-ppc64le
+      env: TARGET=selftests@ppc64le@ubuntu@18.10
+    - os:  linux
+      env: TARGET=selftests@ppc64@ubuntu@18.10
 
 script:
   - git clone -q --depth 1 https://github.com/mpe/ci-scripts.git
