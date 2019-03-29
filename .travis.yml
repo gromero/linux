@@ -6,6 +6,8 @@ services: docker
 branches:
   only:
     - ci-test
+    - fixes-test
+    - next-test
 
 matrix:
   include:
