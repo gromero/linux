@@ -2,6 +2,7 @@ language: c
 dist: xenial
 sudo: required
 services: docker
+cache: ccache
 
 branches:
   only:
@@ -42,4 +43,4 @@ matrix:
 script:
   - git clone -q --depth 1 https://github.com/mpe/ci-scripts.git
   - mkdir -p build
-  - make -C ci-scripts/build CI_OUTPUT=$PWD/build JFACTOR=$(nproc) SRC=$PWD $TARGET
+  - make -C ci-scripts/build KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$PWD/build JFACTOR=$(nproc) SRC=$PWD $TARGET
