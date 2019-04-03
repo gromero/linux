@@ -14,34 +14,34 @@ matrix:
   include:
     # 64-bit configs
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64le DEFCONFIG=ppc64le_allmodconfig	# PPC_BOOK3S_64 && LITTLE_ENDIAN
+      env: BUILD_ENV=ppc64l@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc64le_allmodconfig	# PPC_BOOK3S_64 && LITTLE_ENDIAN
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=allmodconfig		# PPC_BOOK3S_64 && BIG_ENDIAN
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=allmodconfig		# PPC_BOOK3S_64 && BIG_ENDIAN
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=ppc64_book3e_allmodconfig	# PPC_BOOK3E_64
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc64_book3e_allmodconfig	# PPC_BOOK3E_64
     # 32-bit configs
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=ppc32_allmodconfig		# PPC_BOOK3S_32
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc32_allmodconfig		# PPC_BOOK3S_32
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=ppc40x_defconfig		# PPC_40x
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc40x_defconfig		# PPC_40x
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=ppc44x_defconfig		# PPC_44x
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc44x_defconfig		# PPC_44x
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=mpc885_ads_defconfig	# PPC_8xx
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=mpc885_ads_defconfig	# PPC_8xx
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=kernel@ppc64 DEFCONFIG=corenet32_smp_defconfig	# PPC_85xx
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=corenet32_smp_defconfig	# PPC_85xx
     # selftests
     - os:  linux-ppc64le
-      env: IMAGE=ubuntu@18.10 TARGET=ppctests@ppc64le
+      env: BUILD_ENV=ppc64l@ubuntu@18.10 TARGET=ppctests
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=ppctests@ppc64
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=ppctests
     - os:  linux-ppc64le
-      env: IMAGE=ubuntu@18.10 TARGET=selftests@ppc64le
+      env: BUILD_ENV=ppc64l@ubuntu@18.10 TARGET=selftests
     - os:  linux
-      env: IMAGE=ubuntu@18.10 TARGET=selftests@ppc64
+      env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=selftests
 
 script:
   - git clone -q --depth 1 https://github.com/mpe/ci-scripts.git
   - mkdir -p build
-  - docker pull mpee/linuxppc-build:${IMAGE}
-  - make -C ci-scripts/build KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$PWD/build JFACTOR=$(nproc) SRC=$PWD ${TARGET}@$IMAGE
+  - make -C ci-scripts/build pull-image@$BUILD_ENV
+  - make -C ci-scripts/build KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$PWD/build JFACTOR=$(nproc) SRC=$PWD $TARGET@$BUILD_ENV
