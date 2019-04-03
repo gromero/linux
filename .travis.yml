@@ -14,7 +14,7 @@ matrix:
   include:
     # 64-bit configs
     - os:  linux
-      env: BUILD_ENV=ppc64l@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc64le_allmodconfig	# PPC_BOOK3S_64 && LITTLE_ENDIAN
+      env: BUILD_ENV=ppc64le@ubuntu@18.10 TARGET=kernel DEFCONFIG=ppc64le_allmodconfig	# PPC_BOOK3S_64 && LITTLE_ENDIAN
     - os:  linux
       env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=allmodconfig		# PPC_BOOK3S_64 && BIG_ENDIAN
     - os:  linux
@@ -32,11 +32,11 @@ matrix:
       env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=kernel DEFCONFIG=corenet32_smp_defconfig	# PPC_85xx
     # selftests
     - os:  linux-ppc64le
-      env: BUILD_ENV=ppc64l@ubuntu@18.10 TARGET=ppctests
+      env: BUILD_ENV=ppc64le@ubuntu@18.10 TARGET=ppctests
     - os:  linux
       env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=ppctests
     - os:  linux-ppc64le
-      env: BUILD_ENV=ppc64l@ubuntu@18.10 TARGET=selftests
+      env: BUILD_ENV=ppc64le@ubuntu@18.10 TARGET=selftests
     - os:  linux
       env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=selftests
 
