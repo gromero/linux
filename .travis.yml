@@ -36,6 +36,14 @@ matrix:
     - os:  linux
       env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=ppctests
     - os:  linux-ppc64le
+      env: BUILD_ENV=ppc64le@ubuntu@18.04 TARGET=ppctests
+    - os:  linux
+      env: BUILD_ENV=ppc64@ubuntu@18.04 TARGET=ppctests
+    - os:  linux-ppc64le
+      env: BUILD_ENV=ppc64le@ubuntu@16.04 TARGET=ppctests
+    - os:  linux
+      env: BUILD_ENV=ppc64@ubuntu@16.04 TARGET=ppctests
+    - os:  linux-ppc64le
       env: BUILD_ENV=ppc64le@ubuntu@18.10 TARGET=selftests
     - os:  linux
       env: BUILD_ENV=ppc64@ubuntu@18.10 TARGET=selftests
