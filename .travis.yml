@@ -43,5 +43,5 @@ matrix:
 script:
   - git clone -q --depth 1 https://github.com/mpe/ci-scripts.git
   - mkdir -p build
-  - bash -c "docker pull mpee/linuxppc-build:$IMAGE"
+  - docker pull mpee/linuxppc-build:${IMAGE}
   - make -C ci-scripts/build KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$PWD/build JFACTOR=$(nproc) SRC=$PWD ${TARGET}@$IMAGE
