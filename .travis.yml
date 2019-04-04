@@ -22,4 +22,4 @@ script:
   - mkdir -p $HOME/output
   - chmod a+w $HOME/output
   - make -C ~/ci-scripts/build pull-image@$BUILD_ENV
-  - make -C ~/ci-scripts/build KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$HOME/output JFACTOR=$(nproc) SRC=$PWD $TARGET@$BUILD_ENV
+  - make -C ~/ci-scripts/build QUIET=1 KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$HOME/output JFACTOR=$(nproc) SRC=$PWD $TARGET@$BUILD_ENV
