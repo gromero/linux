@@ -19,7 +19,7 @@ matrix:
 script:
   - id
   - git clone -q --depth 1 https://github.com/mpe/ci-scripts.git $HOME/ci-scripts
-  - mkdir -p $HOME/output
-  - chmod a+w $HOME/output
+  - mkdir -p $HOME/output/$BUILD_ENV
+  - chmod a+w $HOME/output/$BUILD_ENV
   - make -C ~/ci-scripts/build pull-image@$BUILD_ENV
   - make -C ~/ci-scripts/build QUIET=1 KBUILD_BUILD_TIMESTAMP=$(date +%Y-%m-%d) CCACHE=$HOME/.ccache CI_OUTPUT=$HOME/output JFACTOR=$(nproc) SRC=$PWD $TARGET@$BUILD_ENV
