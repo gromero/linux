@@ -13,6 +13,8 @@ matrix:
   include:
     - os:  linux-ppc64le
       env: DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
+    - os:  linux-ppc64le
+      env: DEFCONFIG=skiroot_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
     - os:  linux
       env: DEFCONFIG=ppc64_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-"
       addons:
