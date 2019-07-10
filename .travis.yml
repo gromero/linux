@@ -31,6 +31,13 @@ matrix:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
+    - os:  linux
+      env: DEFCONFIG=ppc64e_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-"
+      name: "kernel(ppc64e)"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc-linux-gnu
     - os:  linux-ppc64le
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-" SELFTESTS=1
       name: "selftests(ppc64le)"
