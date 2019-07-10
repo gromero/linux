@@ -28,7 +28,7 @@ matrix:
           packages:
           - gcc-powerpc-linux-gnu
     - os:  linux-ppc64le
-      env: DEFCONFIG= CROSS_COMPILE="ccache powerpc64le-linux-gnu-" MAKE_ARGS="-C tools/testing/selftests"
+      env: DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-" MAKE_ARGS="-C tools/testing/selftests"
       addons:
         apt:
           packages:
@@ -45,6 +45,6 @@ branches:
 
 script:
   - mkdir -p $KBUILD_OUTPUT
-  - "[ -n $DEFCONFIG ] && make $DEFCONFIG || true"
+  - make $DEFCONFIG
   - travis_wait 50 make -s -j $(nproc) $MAKE_ARGS
   - ccache -s
