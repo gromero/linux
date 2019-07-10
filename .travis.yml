@@ -41,6 +41,13 @@ matrix:
           - libcap-ng-dev
           - libnuma-dev
           - libpopt-dev
+    - os:  linux
+      env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-" SELFTESTS=1
+      name: "selftests(ppc64)"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc-linux-gnu
 
 branches:
   only:
