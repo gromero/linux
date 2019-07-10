@@ -48,6 +48,7 @@ matrix:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
+          - gcc-5-multilib-powerpc-linux-gnu
 
 branches:
   only:
