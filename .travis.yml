@@ -38,6 +38,7 @@ matrix:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
+          - u-boot-tools
     - os:  linux-ppc64le
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-" SELFTESTS=1
       name: "selftests(ppc64le)"
