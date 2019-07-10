@@ -13,7 +13,14 @@ matrix:
   include:
     - os:   linux-ppc64le
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
+      name: "kernel(ppc64le) (native)"
+    - os:   linux
+      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
       name: "kernel(ppc64le)"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc64le-linux-gnu
     - os:   linux-ppc64le
       env:  DEFCONFIG=skiroot_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
       name: "kernel(skiroot)"
