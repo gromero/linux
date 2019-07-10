@@ -32,7 +32,7 @@ matrix:
           packages:
           - gcc-powerpc-linux-gnu
     - os:  linux-ppc64le
-      env: DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-" MAKE_ARGS="-C tools/testing/selftests"
+      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-" SELFTESTS=1
       name: "selftests(ppc64le)"
       addons:
         apt:
@@ -50,6 +50,5 @@ branches:
 
 script:
   - mkdir -p $KBUILD_OUTPUT
-  - make $DEFCONFIG
-  - travis_wait 50 make -s -j $(nproc) $MAKE_ARGS
+  - travis_wait 50 ./arch/powerpc/tools/ci-build.sh
   - ccache -s
