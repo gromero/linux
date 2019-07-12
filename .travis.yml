@@ -64,6 +64,9 @@ matrix:
           packages:
           - gcc-powerpc-linux-gnu
           - gcc-5-multilib-powerpc-linux-gnu
+    - os:   linux-ppc64le
+      env:  PERF=1 CROSS_COMPILE="powerpc64le-linux-gnu-"
+      name: "perf(ppc64le)"
 
 branches:
   only:

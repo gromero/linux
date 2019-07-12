@@ -14,7 +14,10 @@ echo "## TIMESTAMP     = $KBUILD_BUILD_TIMESTAMP"
 
 nproc=$(nproc)
 
-if [[ -n "$SELFTESTS" ]]; then
+if [[ -n "$PERF" ]]; then
+    (set -x; make -C tools/perf)
+    rc=$?
+elif [[ -n "$SELFTESTS" ]]; then
     (set -x; make -j $nproc -C tools/testing/selftests TARGETS=powerpc)
     rc=$?
     if [[ $rc -eq 0 ]]; then
