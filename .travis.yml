@@ -46,6 +46,38 @@ matrix:
           packages:
           - gcc-powerpc-linux-gnu
           - u-boot-tools
+    - os:  linux
+      env: DEFCONFIG=ppc40x_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
+      name: "kernel: ppc40x PPC_40x"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc-linux-gnu
+          - u-boot-tools
+    - os:  linux
+      env: DEFCONFIG=ppc44x_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
+      name: "kernel: ppc44x PPC_44x"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc-linux-gnu
+          - u-boot-tools
+    - os:  linux
+      env: DEFCONFIG=mpc885_ads_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
+      name: "kernel: mpc885_ads PPC_8xx"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc-linux-gnu
+          - u-boot-tools
+    - os:  linux
+      env: DEFCONFIG=corenet32_smp_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
+      name: "kernel: corenet32_smp PPC_85xx"
+      addons:
+        apt:
+          packages:
+          - gcc-powerpc-linux-gnu
+          - u-boot-tools
     - os:  linux-ppc64le
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-" SELFTESTS=1
       name: "selftests: ppc64le"
