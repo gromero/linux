@@ -67,6 +67,25 @@ matrix:
     - os:   linux-ppc64le
       env:  PERF=1 CROSS_COMPILE="powerpc64le-linux-gnu-"
       name: "perf(ppc64le)"
+      addons:
+        apt:
+          packages:
+          - libzstd1-dev
+          - libunwind-dev
+          - libelf-dev
+          - binutils-dev
+          - libnuma-dev
+          - libperl-dev
+          - python-dev
+          - libdw-dev
+          - libssl-dev
+          - libslang2-dev
+          - libiberty-dev
+          - liblzma-dev
+          - libbabeltrace-dev
+          - libbabeltrace-ctf-dev
+          - libaudit-dev
+          - systemtap-sdt-dev
 
 branches:
   only:
