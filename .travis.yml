@@ -13,34 +13,34 @@ matrix:
   include:
     - os:   linux-ppc64le
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-"
-      name: "kernel(ppc64le) (native)"
+      name: "kernel: ppc64le PPC_BOOK3S_64 && LITTLE_ENDIAN (native)"
     - os:   linux
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-"
-      name: "kernel(ppc64le)"
+      name: "kernel: ppc64le PPC_BOOK3S_64 && LITTLE_ENDIAN"
       addons:
         apt:
           packages:
           - gcc-powerpc64le-linux-gnu
     - os:   linux-ppc64le
       env:  DEFCONFIG=skiroot_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-"
-      name: "kernel(skiroot)"
+      name: "kernel: skiroot PPC_BOOK3S_64 && LITTLE_ENDIAN"
     - os:   linux
       env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
-      name: "kernel(ppc64)"
+      name: "kernel: ppc64 PPC_BOOK3S_64 && BIG_ENDIAN"
       addons:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
     - os:  linux
       env: DEFCONFIG=pmac32_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
-      name: "kernel(pmac32)"
+      name: "kernel: pmac32 PPC_BOOK3S_32"
       addons:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
     - os:  linux
       env: DEFCONFIG=ppc64e_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
-      name: "kernel(ppc64e)"
+      name: "kernel: ppc64e PPC_BOOK3E_64"
       addons:
         apt:
           packages:
@@ -48,7 +48,7 @@ matrix:
           - u-boot-tools
     - os:  linux-ppc64le
       env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-" SELFTESTS=1
-      name: "selftests(ppc64le)"
+      name: "selftests: ppc64le"
       addons:
         apt:
           packages:
@@ -58,7 +58,7 @@ matrix:
           - libpopt-dev
     - os:  linux
       env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="powerpc-linux-gnu-" SELFTESTS=1
-      name: "selftests(ppc64)"
+      name: "selftests: ppc64"
       addons:
         apt:
           packages:
@@ -66,7 +66,7 @@ matrix:
           - gcc-5-multilib-powerpc-linux-gnu
     - os:   linux-ppc64le
       env:  PERF=1 CROSS_COMPILE="powerpc64le-linux-gnu-"
-      name: "perf(ppc64le)"
+      name: "perf: ppc64le"
       addons:
         apt:
           packages:
