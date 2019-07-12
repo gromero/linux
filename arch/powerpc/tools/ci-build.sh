@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export ARCH
+export CROSS_COMPILE
+
 gcc_version=$(${CROSS_COMPILE}gcc --version | head -1)
 ld_version=$(${CROSS_COMPILE}ld --version | head -1)
 
