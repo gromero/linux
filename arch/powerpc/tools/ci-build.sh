@@ -18,9 +18,12 @@ if [[ -n "$SELFTESTS" ]]; then
     (set -x; make -j $nproc -C tools/testing/selftests TARGETS=powerpc)
     rc=$?
     if [[ $rc -eq 0 ]]; then
-	(set -x; make -j $nproc -C tools/testing/selftests)
+	(set -x; make -j $nproc -C tools/testing/selftests install)
 	rc=$?
     fi
+
+    bins=$(find $KBUILD_OUTPUT/kselftest/install -type f -perm -u+x | wc -l)
+    echo "## Found $bins selftest binaries"
 else
     CROSS_COMPILE="ccache $CROSS_COMPILE"
 
