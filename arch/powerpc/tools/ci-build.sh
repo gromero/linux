@@ -22,13 +22,19 @@ if [[ -n "$SELFTESTS" ]]; then
 	rc=$?
     fi
 else
+    CROSS_COMPILE="ccache $CROSS_COMPILE"
+
     echo "## DEFCONFIG     = $DEFCONFIG"
     (set -x; make -s $DEFCONFIG)
     rc=$?
 
     if [[ $rc -eq 0 ]]; then
-         (set -x; make -s -j $nproc)
-         rc=$?
+	(set -x; make -s -j $nproc)
+	rc=$?
+    fi
+
+    if [[ $rc -eq 0 ]]; then
+	ccache -s
     fi
 fi
 

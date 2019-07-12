@@ -12,34 +12,34 @@ env:
 matrix:
   include:
     - os:   linux-ppc64le
-      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
+      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-"
       name: "kernel(ppc64le) (native)"
     - os:   linux
-      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
+      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-"
       name: "kernel(ppc64le)"
       addons:
         apt:
           packages:
           - gcc-powerpc64le-linux-gnu
     - os:   linux-ppc64le
-      env:  DEFCONFIG=skiroot_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-"
+      env:  DEFCONFIG=skiroot_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-"
       name: "kernel(skiroot)"
     - os:   linux
-      env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-"
+      env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
       name: "kernel(ppc64)"
       addons:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
     - os:  linux
-      env: DEFCONFIG=pmac32_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-"
+      env: DEFCONFIG=pmac32_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
       name: "kernel(pmac32)"
       addons:
         apt:
           packages:
           - gcc-powerpc-linux-gnu
     - os:  linux
-      env: DEFCONFIG=ppc64e_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-"
+      env: DEFCONFIG=ppc64e_defconfig CROSS_COMPILE="powerpc-linux-gnu-"
       name: "kernel(ppc64e)"
       addons:
         apt:
@@ -47,7 +47,7 @@ matrix:
           - gcc-powerpc-linux-gnu
           - u-boot-tools
     - os:  linux-ppc64le
-      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="ccache powerpc64le-linux-gnu-" SELFTESTS=1
+      env:  DEFCONFIG=ppc64le_defconfig CROSS_COMPILE="powerpc64le-linux-gnu-" SELFTESTS=1
       name: "selftests(ppc64le)"
       addons:
         apt:
@@ -57,7 +57,7 @@ matrix:
           - libnuma-dev
           - libpopt-dev
     - os:  linux
-      env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="ccache powerpc-linux-gnu-" SELFTESTS=1
+      env:  DEFCONFIG=ppc64_defconfig CROSS_COMPILE="powerpc-linux-gnu-" SELFTESTS=1
       name: "selftests(ppc64)"
       addons:
         apt:
@@ -74,4 +74,3 @@ branches:
 script:
   - mkdir -p $KBUILD_OUTPUT
   - travis_wait 50 ./arch/powerpc/tools/ci-build.sh
-  - ccache -s
