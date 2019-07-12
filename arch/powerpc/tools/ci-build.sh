@@ -35,6 +35,7 @@ else
 
     if [[ $rc -eq 0 ]]; then
 	ccache -s
+	size -x -A $KBUILD_OUTPUT/vmlinux
     fi
 fi
 
