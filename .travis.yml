@@ -118,7 +118,7 @@ matrix:
           - libbabeltrace-ctf-dev
           - libaudit-dev
           - systemtap-sdt-dev
-    - os:   linux-ppc64
+    - os:   linux
       env:  PERF=1 CROSS_COMPILE="powerpc-linux-gnu-"
       name: "perf: ppc64"
       addons:
