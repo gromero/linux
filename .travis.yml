@@ -15,7 +15,8 @@ matrix:
       name: "kernel: ppc64le (PPC_BOOK3S_64 && LITTLE_ENDIAN)"
 
 install:
-  - docker pull linuxppc/build:$DISTRO-$(uname -m)
+  - export BUILD_ARCH=$(uname -m)
+  - docker pull linuxppc/build:$DISTRO-$BUILD_ARCH
 
 script:
   - travis_wait 50 ./arch/powerpc/tools/ci-build.sh
