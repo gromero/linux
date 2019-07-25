@@ -5,7 +5,7 @@ if [[ -z "$TRAVIS_BUILD_DIR" || -z "$TARGET" || -z "$DISTRO" || -z "$SUBARCH" ]]
     exit 1
 fi
 
-cmd="$DOCKER run --rm "
+cmd="docker run --rm "
 cmd+="--network none "
 cmd+="-w /linux "
 cmd+="-v $TRAVIS_BUILD_DIR:/linux:ro "
