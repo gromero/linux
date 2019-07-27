@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ -z "$TRAVIS_BUILD_DIR" || -z "$TARGET" || -z "$DISTRO" || -z "$SUBARCH" ]]; then
+if [[ -z "$TRAVIS_BUILD_DIR" || -z "$TARGET" || -z "$IMAGE" || -z "$SUBARCH" ]]; then
     echo "Error: required environment variables not set!"
     exit 1
 fi
@@ -29,7 +29,7 @@ cmd+="-v $HOME/.ccache:/ccache:rw "
 cmd+="-e CCACHE_DIR=/ccache "
 cmd+="-e CCACHE=1 "
 
-cmd+="linuxppc/build:$DISTRO-$(uname -m) "
+cmd+="linuxppc/build:$IMAGE-$(uname -m) "
 cmd+="/bin/container-build.sh $TARGET"
 
 (set -x; $cmd)
