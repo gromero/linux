@@ -25,6 +25,9 @@ cmd+="-e CROSS_COMPILE=$cross "
 mkdir -p $HOME/output
 cmd+="-v $HOME/output:/output:rw "
 
+user=$(stat -c "%u:%g" $HOME/output)
+cmd+="-u $user "
+
 cmd+="-v $HOME/.ccache:/ccache:rw "
 cmd+="-e CCACHE_DIR=/ccache "
 cmd+="-e CCACHE=1 "
