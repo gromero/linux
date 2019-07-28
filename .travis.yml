@@ -37,9 +37,6 @@ matrix:
     - os:   linux
       env:  TARGET=kernel SUBARCH=ppc64 IMAGE=ubuntu-19.04 DEFCONFIG=corenet32_smp_defconfig
       name: "kernel: corenet32_smp (PPC_85xx)"
-    - os:   linux
-      env:  TARGET=ppctests SUBARCH=ppc64 IMAGE=ubuntu-19.04
-      name: "ppctests: ppc64"
     - os:   linux-ppc64le
       env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-19.04
       name: "ppctests: ppc64le (native) Ubuntu 19.04"
@@ -52,6 +49,18 @@ matrix:
     - os:   linux-ppc64le
       env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-16.04
       name: "ppctests: ppc64le (native) Ubuntu 16.04"
+    - os:   linux
+      env:  TARGET=ppctests SUBARCH=ppc64 IMAGE=ubuntu-19.04
+      name: "ppctests: ppc64 Ubuntu 19.04"
+    - os:   linux
+      env:  TARGET=ppctests SUBARCH=ppc64 IMAGE=ubuntu-18.10
+      name: "ppctests: ppc64 Ubuntu 18.10"
+    - os:   linux
+      env:  TARGET=ppctests SUBARCH=ppc64 IMAGE=ubuntu-18.04
+      name: "ppctests: ppc64 Ubuntu 18.04"
+    - os:   linux
+      env:  TARGET=ppctests SUBARCH=ppc64 IMAGE=ubuntu-16.04
+      name: "ppctests: ppc64 Ubuntu 16.04"
     - os:   linux-ppc64le
       env:  TARGET=selftests SUBARCH=ppc64le IMAGE=ubuntu-19.04
       name: "selftests: ppc64le (native)"
