@@ -31,7 +31,10 @@ cmd+="-u $user "
 cmd+="-v $HOME/.ccache:/ccache:rw "
 cmd+="-e CCACHE_DIR=/ccache "
 cmd+="-e CCACHE=1 "
-cmd+="-e QUIET=1 "
+
+if [[ "$TARGET" == "kernel" ]]; then
+    cmd+="-e QUIET=1 "
+fi
 
 cmd+="linuxppc/build:$IMAGE-$(uname -m) "
 cmd+="/bin/container-build.sh $TARGET"
