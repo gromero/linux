@@ -16,12 +16,21 @@ matrix:
     - os:   linux-ppc64le
       env:  TARGET=kernel SUBARCH=ppc64le IMAGE=ubuntu-19.04 DEFCONFIG=ppc64le_defconfig
       name: "kernel: ppc64le (native) (PPC_BOOK3S_64 && LITTLE_ENDIAN)"
-    - os:   linux-ppc64le
-      env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-19.04
-      name: "ppctests: ppc64le (native)"
     - os:   linux
       env:  TARGET=ppctests SUBARCH=ppc64 IMAGE=ubuntu-19.04
       name: "ppctests: ppc64"
+    - os:   linux-ppc64le
+      env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-19.04
+      name: "ppctests: ppc64le (native) Ubuntu 19.04"
+    - os:   linux-ppc64le
+      env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-18.10
+      name: "ppctests: ppc64le (native) Ubuntu 18.10"
+    - os:   linux-ppc64le
+      env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-18.04
+      name: "ppctests: ppc64le (native) Ubuntu 18.04"
+    - os:   linux-ppc64le
+      env:  TARGET=ppctests SUBARCH=ppc64le IMAGE=ubuntu-16.04
+      name: "ppctests: ppc64le (native) Ubuntu 16.04"
 
 install:
   - docker pull linuxppc/build:$IMAGE-$(uname -m)
