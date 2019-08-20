@@ -66,6 +66,14 @@ static inline u64 fadump_str_to_u64(const char *str)
 
 #define FADUMP_CRASH_INFO_MAGIC		fadump_str_to_u64("FADMPINF")
 
+/*
+ * Amount of memory (1024MB) to skip before making another attempt at
+ * reserving memory (after the previous attempt to reserve memory for
+ * FADump failed due to memory holes and/or reserved ranges) to reduce
+ * the likelihood of memory reservation failure.
+ */
+#define FADUMP_OFFSET_SIZE			0x40000000U
+
 /* fadump crash info structure */
 struct fadump_crash_info_header {
 	u64		magic_number;

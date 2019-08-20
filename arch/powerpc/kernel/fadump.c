@@ -371,7 +371,7 @@ int __init fadump_reserve_mem(void)
 			    !memblock_is_region_reserved(base, size))
 				break;
 
-			base += size;
+			base += FADUMP_OFFSET_SIZE;
 		}
 
 		if (base > (memory_boundary - size)) {
