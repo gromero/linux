@@ -120,19 +120,29 @@ static void opal_fadump_update_config(struct fw_dump *fadump_conf,
 static void opal_fadump_get_config(struct fw_dump *fadump_conf,
 				   const struct opal_fadump_mem_struct *fdm)
 {
+	unsigned long base, size, last_end, hole_size;
 	int i;
 
 	if (!fadump_conf->dump_active)
 		return;
 
+	last_end = 0;
+	hole_size = 0;
 	fadump_conf->boot_memory_size = 0;
 
 	pr_debug("Boot memory regions:\n");
 	for (i = 0; i < fdm->region_cnt; i++) {
-		pr_debug("\t%d. base: 0x%llx, size: 0x%llx\n",
-			 (i + 1), fdm->rgn[i].src, fdm->rgn[i].size);
+		base = fdm->rgn[i].src;
+		size = fdm->rgn[i].size;
+		pr_debug("\t%d. base: 0x%lx, size: 0x%lx\n",
+			 (i + 1), base, size);
 
-		fadump_conf->boot_memory_size += fdm->rgn[i].size;
+		fadump_conf->boot_mem_addr[i] = base;
+		fadump_conf->boot_mem_sz[i] = size;
+		fadump_conf->boot_memory_size += size;
+		hole_size += (base - last_end);
+
+		last_end = base + size;
 	}
 
 	/*
@@ -165,6 +175,8 @@ static void opal_fadump_get_config(struct fw_dump *fadump_conf,
 		pr_warn("  But the sanity of the '/proc/vmcore' file depends on whether the above region(s) have any kernel pages or not.\n");
 	}
 
+	fadump_conf->boot_mem_top = (fadump_conf->boot_memory_size + hole_size);
+	fadump_conf->boot_mem_regs_cnt = fdm->region_cnt;
 	opal_fadump_update_config(fadump_conf, fdm);
 }
 
@@ -179,34 +191,20 @@ static void opal_fadump_init_metadata(struct opal_fadump_mem_struct *fdm)
 
 static ulong opal_fadump_init_mem_struct(struct fw_dump *fadump_conf)
 {
-	ulong src_addr, dest_addr;
-	int max_copy_size, cur_size, size;
+	ulong addr = fadump_conf->reserve_dump_area_start;
+	int i;
 
 	opal_fdm = __va(fadump_conf->kernel_metadata);
 	opal_fadump_init_metadata(opal_fdm);
 
-	/*
-	 * Firmware currently supports only 32-bit value for size,
-	 * align it to pagesize and request firmware to copy multiple
-	 * kernel boot memory regions.
-	 */
-	max_copy_size = _ALIGN_DOWN(U32_MAX, PAGE_SIZE);
-
 	/* Boot memory regions */
-	src_addr = RMA_START;
-	dest_addr = fadump_conf->reserve_dump_area_start;
-	size = fadump_conf->boot_memory_size;
-	while (size) {
-		cur_size = size > max_copy_size ? max_copy_size : size;
-
-		opal_fdm->rgn[opal_fdm->region_cnt].src  = src_addr;
-		opal_fdm->rgn[opal_fdm->region_cnt].dest = dest_addr;
-		opal_fdm->rgn[opal_fdm->region_cnt].size = cur_size;
+	for (i = 0; i < fadump_conf->boot_mem_regs_cnt; i++) {
+		opal_fdm->rgn[i].src	= fadump_conf->boot_mem_addr[i];
+		opal_fdm->rgn[i].dest	= addr;
+		opal_fdm->rgn[i].size	= fadump_conf->boot_mem_sz[i];
 
 		opal_fdm->region_cnt++;
-		dest_addr	+= cur_size;
-		src_addr	+= cur_size;
-		size		-= cur_size;
+		addr += fadump_conf->boot_mem_sz[i];
 	}
 
 	/*
@@ -218,7 +216,7 @@ static ulong opal_fadump_init_mem_struct(struct fw_dump *fadump_conf)
 
 	opal_fadump_update_config(fadump_conf, opal_fdm);
 
-	return dest_addr;
+	return addr;
 }
 
 static ulong opal_fadump_get_metadata_size(void)
@@ -263,7 +261,7 @@ static int opal_fadump_setup_metadata(struct fw_dump *fadump_conf)
 	 * by a kernel that intends to preserve crash'ed kernel's memory.
 	 */
 	ret = opal_mpipl_register_tag(OPAL_MPIPL_TAG_BOOT_MEM,
-				      fadump_conf->boot_memory_size);
+				      fadump_conf->boot_mem_top);
 	if (ret != OPAL_SUCCESS) {
 		pr_err("Failed to set boot memory tag!\n");
 		err = -EPERM;
@@ -647,6 +645,12 @@ int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 
 	fadump_conf->ops		= &opal_fadump_ops;
 	fadump_conf->fadump_supported	= 1;
+
+	/*
+	 * Firmware currently supports only 32-bit value for size,
+	 * align it to pagesize.
+	 */
+	fadump_conf->max_copy_size = _ALIGN_DOWN(U32_MAX, PAGE_SIZE);
 
 	/*
 	 * Check if dump has been initiated on last reboot.

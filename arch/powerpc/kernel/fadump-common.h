@@ -12,6 +12,9 @@
 #ifndef __PPC64_FA_DUMP_INTERNAL_H__
 #define __PPC64_FA_DUMP_INTERNAL_H__
 
+/* Maximum number of memory regions kernel supports */
+#define FADUMP_MAX_MEM_REGS			128
+
 #ifndef CONFIG_PRESERVE_FA_DUMP
 /*
  * The RMA region will be saved for later dumping when kernel crashes.
@@ -106,12 +109,21 @@ struct fw_dump {
 	unsigned long	hpte_region_size;
 
 	unsigned long	boot_mem_dest_addr;
+	unsigned long	boot_mem_addr[FADUMP_MAX_MEM_REGS];
+	unsigned long	boot_mem_sz[FADUMP_MAX_MEM_REGS];
+	unsigned long	boot_mem_regs_cnt;
+	unsigned long	boot_mem_top;
 	unsigned long	boot_memory_size;
 
 	unsigned long	fadumphdr_addr;
 	unsigned long	cpu_notes_buf;
 	unsigned long	cpu_notes_buf_size;
 
+	/*
+	 * Maximum size supported by firmware to copy from source to
+	 * destination address per entry.
+	 */
+	unsigned long	max_copy_size;
 	u64		kernel_metadata;
 
 	int		ibm_configure_kernel_dump;

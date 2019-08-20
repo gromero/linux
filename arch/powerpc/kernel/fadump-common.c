@@ -121,10 +121,19 @@ static int is_fadump_memory_area_contiguous(unsigned long d_start,
  */
 int is_fadump_boot_mem_contiguous(struct fw_dump *fadump_conf)
 {
-	unsigned long d_start = RMA_START;
-	unsigned long d_end   = RMA_START + fadump_conf->boot_memory_size;
+	int i, ret = 0;
+	unsigned long d_start, d_end;
 
-	return is_fadump_memory_area_contiguous(d_start, d_end);
+	for (i = 0; i < fadump_conf->boot_mem_regs_cnt; i++) {
+		d_start = fadump_conf->boot_mem_addr[i];
+		d_end   = d_start + fadump_conf->boot_mem_sz[i];
+
+		ret = is_fadump_memory_area_contiguous(d_start, d_end);
+		if (!ret)
+			break;
+	}
+
+	return ret;
 }
 
 /*

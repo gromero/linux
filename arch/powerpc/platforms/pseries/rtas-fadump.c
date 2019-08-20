@@ -46,7 +46,13 @@ static void rtas_fadump_update_config(struct fw_dump *fadump_conf,
 static void rtas_fadump_get_config(struct fw_dump *fadump_conf,
 				   const struct rtas_fadump_mem_struct *fdm)
 {
-	fadump_conf->boot_memory_size = be64_to_cpu(fdm->rmr_region.source_len);
+	fadump_conf->boot_mem_addr[0] =
+		be64_to_cpu(fdm->rmr_region.source_address);
+	fadump_conf->boot_mem_sz[0] = be64_to_cpu(fdm->rmr_region.source_len);
+	fadump_conf->boot_memory_size = fadump_conf->boot_mem_sz[0];
+
+	fadump_conf->boot_mem_top = fadump_conf->boot_memory_size;
+	fadump_conf->boot_mem_regs_cnt = 1;
 
 	/*
 	 * Start address of reserve dump area (permanent reservation) for
@@ -111,8 +117,7 @@ static ulong rtas_fadump_init_mem_struct(struct fw_dump *fadump_conf)
 	fdm.rmr_region.source_data_type =
 		cpu_to_be16(RTAS_FADUMP_REAL_MODE_REGION);
 	fdm.rmr_region.source_address = cpu_to_be64(RMA_START);
-	fdm.rmr_region.source_len =
-		cpu_to_be64(fadump_conf->boot_memory_size);
+	fdm.rmr_region.source_len = cpu_to_be64(fadump_conf->boot_memory_size);
 	fdm.rmr_region.destination_address = cpu_to_be64(addr);
 	addr += fadump_conf->boot_memory_size;
 
@@ -540,6 +545,9 @@ int __init rtas_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 	fadump_conf->ibm_configure_kernel_dump = be32_to_cpu(*token);
 	fadump_conf->ops		= &rtas_fadump_ops;
 	fadump_conf->fadump_supported	= 1;
+
+	/* Firmware supports 64-bit value for size, align it to pagesize. */
+	fadump_conf->max_copy_size = _ALIGN_DOWN(U64_MAX, PAGE_SIZE);
 
 	/*
 	 * The 'ibm,kernel-dump' rtas node is present only if there is
