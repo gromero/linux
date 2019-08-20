@@ -14,6 +14,7 @@
 #include <linux/of_fdt.h>
 #include <linux/libfdt.h>
 #include <linux/mm.h>
+#include <linux/crash_dump.h>
 
 #include <asm/page.h>
 #include <asm/opal.h>
@@ -21,6 +22,7 @@
 #include "../../kernel/fadump-common.h"
 #include "opal-fadump.h"
 
+static const struct opal_fadump_mem_struct *opal_fdm_active;
 static struct opal_fadump_mem_struct *opal_fdm;
 
 static int opal_fadump_unregister(struct fw_dump *fadump_conf);
@@ -39,6 +41,37 @@ static void opal_fadump_update_config(struct fw_dump *fadump_conf,
 		 fadump_conf->boot_mem_dest_addr);
 
 	fadump_conf->fadumphdr_addr = fdm->fadumphdr_addr;
+}
+
+/*
+ * This function is called in the capture kernel to get configuration details
+ * from metadata setup by the first kernel.
+ */
+static void opal_fadump_get_config(struct fw_dump *fadump_conf,
+				   const struct opal_fadump_mem_struct *fdm)
+{
+	int i;
+
+	if (!fadump_conf->dump_active)
+		return;
+
+	fadump_conf->boot_memory_size = 0;
+
+	pr_debug("Boot memory regions:\n");
+	for (i = 0; i < fdm->region_cnt; i++) {
+		pr_debug("\t%d. base: 0x%llx, size: 0x%llx\n",
+			 (i + 1), fdm->rgn[i].src, fdm->rgn[i].size);
+
+		fadump_conf->boot_memory_size += fdm->rgn[i].size;
+	}
+
+	/*
+	 * Start address of reserve dump area (permanent reservation) for
+	 * re-registering FADump after dump capture.
+	 */
+	fadump_conf->reserve_dump_area_start = fdm->rgn[0].dest;
+
+	opal_fadump_update_config(fadump_conf, fdm);
 }
 
 /* Initialize kernel metadata */
@@ -215,23 +248,113 @@ static void opal_fadump_cleanup(struct fw_dump *fadump_conf)
 		pr_warn("Could not reset (%llu) kernel metadata tag!\n", ret);
 }
 
+/*
+ * Convert CPU state data saved at the time of crash into ELF notes.
+ */
+static int __init opal_fadump_build_cpu_notes(struct fw_dump *fadump_conf)
+{
+	u32 num_cpus, *note_buf;
+	struct fadump_crash_info_header *fdh = NULL;
+
+	num_cpus = 1;
+	/* Allocate buffer to hold cpu crash notes. */
+	fadump_conf->cpu_notes_buf_size = num_cpus * sizeof(note_buf_t);
+	fadump_conf->cpu_notes_buf_size =
+		PAGE_ALIGN(fadump_conf->cpu_notes_buf_size);
+	note_buf = fadump_cpu_notes_buf_alloc(fadump_conf->cpu_notes_buf_size);
+	if (!note_buf) {
+		pr_err("Failed to allocate 0x%lx bytes for cpu notes buffer\n",
+		       fadump_conf->cpu_notes_buf_size);
+		return -ENOMEM;
+	}
+	fadump_conf->cpu_notes_buf = __pa(note_buf);
+
+	pr_debug("Allocated buffer for cpu notes of size %ld at %p\n",
+		 (num_cpus * sizeof(note_buf_t)), note_buf);
+
+	if (fadump_conf->fadumphdr_addr)
+		fdh = __va(fadump_conf->fadumphdr_addr);
+
+	if (fdh && (fdh->crashing_cpu != FADUMP_CPU_UNKNOWN)) {
+		note_buf = fadump_regs_to_elf_notes(note_buf, &(fdh->regs));
+		final_note(note_buf);
+
+		pr_debug("Updating elfcore header (%llx) with cpu notes\n",
+			 fdh->elfcorehdr_addr);
+		fadump_update_elfcore_header(fadump_conf,
+					     __va(fdh->elfcorehdr_addr));
+	}
+
+	return 0;
+}
+
 static int __init opal_fadump_process(struct fw_dump *fadump_conf)
 {
-	return -EINVAL;
+	struct fadump_crash_info_header *fdh;
+	int rc = 0;
+
+	if (!opal_fdm_active || !fadump_conf->fadumphdr_addr)
+		return -EINVAL;
+
+	/* Validate the fadump crash info header */
+	fdh = __va(fadump_conf->fadumphdr_addr);
+	if (fdh->magic_number != FADUMP_CRASH_INFO_MAGIC) {
+		pr_err("Crash info header is not valid.\n");
+		return -EINVAL;
+	}
+
+	/*
+	 * TODO: To build cpu notes, find a way to map PIR to logical id.
+	 *       Also, we may need different method for pseries and powernv.
+	 *       The currently booted kernel could have a different PIR to
+	 *       logical id mapping. So, try saving info of previous kernel's
+	 *       paca to get the right PIR to logical id mapping.
+	 */
+	rc = opal_fadump_build_cpu_notes(fadump_conf);
+	if (rc)
+		return rc;
+
+	/*
+	 * We are done validating dump info and elfcore header is now ready
+	 * to be exported. set elfcorehdr_addr so that vmcore module will
+	 * export the elfcore header through '/proc/vmcore'.
+	 */
+	elfcorehdr_addr = fdh->elfcorehdr_addr;
+
+	return rc;
 }
 
 static void opal_fadump_region_show(struct fw_dump *fadump_conf,
 				    struct seq_file *m)
 {
 	int i;
-	const struct opal_fadump_mem_struct *fdm_ptr = opal_fdm;
+	const struct opal_fadump_mem_struct *fdm_ptr;
 	u64 dumped_bytes = 0;
 
+	if (fadump_conf->dump_active)
+		fdm_ptr = opal_fdm_active;
+	else
+		fdm_ptr = opal_fdm;
+
 	for (i = 0; i < fdm_ptr->region_cnt; i++) {
+		/*
+		 * Only regions that are registered for MPIPL
+		 * would have dump data.
+		 */
+		if ((fadump_conf->dump_active) &&
+		    (i < fdm_ptr->registered_regions))
+			dumped_bytes = fdm_ptr->rgn[i].size;
+
 		seq_printf(m, "DUMP: Src: %#016llx, Dest: %#016llx, ",
 			   fdm_ptr->rgn[i].src, fdm_ptr->rgn[i].dest);
 		seq_printf(m, "Size: %#llx, Dumped: %#llx bytes\n",
 			   fdm_ptr->rgn[i].size, dumped_bytes);
+	}
+
+	/* Dump is active. Show reserved area start address. */
+	if (fadump_conf->dump_active) {
+		seq_printf(m, "\nMemory above %#016lx is reserved for saving crash dump\n",
+			   fadump_conf->reserve_dump_area_start);
 	}
 }
 
@@ -264,6 +387,7 @@ static struct fadump_ops opal_fadump_ops = {
 int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 {
 	unsigned long dn;
+	const __be32 *prop;
 
 	/*
 	 * Check if Firmware-Assisted Dump is supported. if yes, check
@@ -282,6 +406,43 @@ int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 
 	fadump_conf->ops		= &opal_fadump_ops;
 	fadump_conf->fadump_supported	= 1;
+
+	/*
+	 * Check if dump has been initiated on last reboot.
+	 */
+	prop = of_get_flat_dt_prop(dn, "mpipl-boot", NULL);
+	if (prop) {
+		u64 addr = 0;
+		s64 ret;
+		const struct opal_fadump_mem_struct *r_opal_fdm_active;
+
+		ret = opal_mpipl_query_tag(OPAL_MPIPL_TAG_KERNEL, &addr);
+		if ((ret != OPAL_SUCCESS) || !addr) {
+			pr_err("Failed to get Kernel metadata (%lld)\n", ret);
+			return 1;
+		}
+
+		addr = be64_to_cpu(addr);
+		pr_debug("Kernel metadata addr: %llx\n", addr);
+
+		opal_fdm_active = __va(addr);
+		r_opal_fdm_active = (void *)addr;
+		if (r_opal_fdm_active->version != OPAL_FADUMP_VERSION) {
+			pr_err("FADump active but version (%u) unsupported!\n",
+			       r_opal_fdm_active->version);
+			return 1;
+		}
+
+		/* Kernel regions not registered with f/w for MPIPL */
+		if (r_opal_fdm_active->registered_regions == 0) {
+			opal_fdm_active = NULL;
+			return 1;
+		}
+
+		pr_info("Firmware-assisted dump is active.\n");
+		fadump_conf->dump_active = 1;
+		opal_fadump_get_config(fadump_conf, r_opal_fdm_active);
+	}
 
 	return 1;
 }
