@@ -72,7 +72,8 @@ as follows:
    normal.
 
 -  The freshly booted kernel will notice that there is a new
-   node (ibm,dump-kernel) in the device tree, indicating that
+   node (ibm,dump-kernel on PSeries or ibm,opal/dump/mpipl-boot
+   on OPAL platform) in the device tree, indicating that
    there is crash data available from a previous boot. During
    the early boot OS will reserve rest of the memory above
    boot memory size effectively booting with restricted memory
@@ -96,7 +97,9 @@ as follows:
 
 Please note that the firmware-assisted dump feature
 is only available on Power6 and above systems with recent
-firmware versions.
+firmware versions on PSeries (PowerVM) platform and Power9
+and above systems with recent firmware versions on PowerNV
+(OPAL) platform.
 
 Implementation details:
 -----------------------
@@ -111,56 +114,75 @@ that are run. If there is dump data, then the
 /sys/kernel/fadump_release_mem file is created, and the reserved
 memory is held.
 
-If there is no waiting dump data, then only the memory required
-to hold CPU state, HPTE region, boot memory dump and elfcore
-header, is usually reserved at an offset greater than boot memory
-size (see Fig. 1). This area is *not* released: this region will
-be kept permanently reserved, so that it can act as a receptacle
-for a copy of the boot memory content in addition to CPU state
-and HPTE region, in the case a crash does occur. Since this reserved
-memory area is used only after the system crash, there is no point in
-blocking this significant chunk of memory from production kernel.
-Hence, the implementation uses the Linux kernel's Contiguous Memory
-Allocator (CMA) for memory reservation if CMA is configured for kernel.
-With CMA reservation this memory will be available for applications to
-use it, while kernel is prevented from using it. With this FADump will
-still be able to capture all of the kernel memory and most of the user
-space memory except the user pages that were present in CMA region::
+If there is no waiting dump data, then only the memory required to
+hold CPU state, HPTE region, boot memory dump, FADump header and
+elfcore header, is usually reserved at an offset greater than boot
+memory size (see Fig. 1). This area is *not* released: this region
+will be kept permanently reserved, so that it can act as a receptacle
+for a copy of the boot memory content in addition to CPU state and
+HPTE region, in the case a crash does occur.
+
+Since this reserved memory area is used only after the system crash,
+there is no point in blocking this significant chunk of memory from
+production kernel. Hence, the implementation uses the Linux kernel's
+Contiguous Memory Allocator (CMA) for memory reservation if CMA is
+configured for kernel. With CMA reservation this memory will be
+available for applications to use it, while kernel is prevented from
+using it. With this FADump will still be able to capture all of the
+kernel memory and most of the user space memory except the user pages
+that were present in CMA region::
 
   o Memory Reservation during first kernel
 
-  Low memory                                                Top of memory
-  0      boot memory size      |<--Reserved dump area --->|      |
-  |           |                | (Permanent Reservation)  |      |
-  V           V                |                          |      V
-  +-----------+----------/ /---+---+----+--------+---+----+------+
-  |           |                |CPU|HPTE|  DUMP  |HDR|ELF |      |
-  +-----------+----------/ /---+---+----+--------+---+----+------+
-        |                                   ^      ^
-        |                                   |      |
-        \                                   /      |
-         -----------------------------------     FADump Header
-          Boot memory content gets transferred   (meta area)
-          to reserved area by firmware at the
-          time of crash
+  Low memory                                                 Top of memory
+  0    boot memory size   |<--- Reserved dump area --->|       |
+  |           |           |    Permanent Reservation   |       |
+  V           V           |                            |       V
+  +-----------+-----/ /---+---+----+-------+-----+-----+----+--+
+  |           |           |///|////|  DUMP | HDR | ELF |////|  |
+  +-----------+-----/ /---+---+----+-------+-----+-----+----+--+
+        |                   ^    ^     ^      ^           ^
+        |                   |    |     |      |           |
+        \                  CPU  HPTE   /      |           |
+         ------------------------------       |           |
+      Boot memory content gets transferred    |           |
+      to reserved area by firmware at the     |           |
+      time of crash.                          |           |
+                                          FADump Header   |
+                                           (meta area)    |
+                                                          |
+                                                          |
+                      Metadata: This area holds a metadata struture whose
+                      address is registered with f/w and retrieved in the
+                      second kernel after crash, on platforms that support
+                      tags (OPAL). Having such structure with info needed
+                      to process the crashdump eases dump capture process.
 
                    Fig. 1
 
 
   o Memory Reservation during second kernel after crash
 
-  Low memory                                                Top of memory
-  0      boot memory size                                        |
-  |           |<----------- Crash preserved area --------------->|
-  V           V                |<-- Reserved dump area -->|      V
-  +-----------+----------/ /---+---+----+--------+---+----+------+
-  |           |                |CPU|HPTE|  DUMP  |HDR|ELF |      |
-  +-----------+----------/ /---+---+----+--------+---+----+------+
-        |                                              |
-        V                                              V
-   Used by second                                /proc/vmcore
+  Low memory                                              Top of memory
+  0      boot memory size                                      |
+  |           |<------------ Crash preserved area ------------>|
+  V           V           |<--- Reserved dump area --->|       |
+  +-----------+-----/ /---+---+----+-------+-----+-----+----+--+
+  |           |           |///|////|  DUMP | HDR | ELF |////|  |
+  +-----------+-----/ /---+---+----+-------+-----+-----+----+--+
+        |                                           |
+        V                                           V
+   Used by second                             /proc/vmcore
    kernel to boot
+
+        +---+
+        |///| -> Regions (CPU, HPTE & Metadata) marked like this in the above
+        +---+    figures are not always present. For example, OPAL platform
+                 does not have CPU & HPTE regions while Metadata region is
+                 not supported on pSeries currently.
+
                    Fig. 2
+
 
 Currently the dump will be copied from /proc/vmcore to a new file upon
 user intervention. The dump data available through /proc/vmcore will be
