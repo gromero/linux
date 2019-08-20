@@ -22,6 +22,70 @@
 #include "../../kernel/fadump-common.h"
 #include "opal-fadump.h"
 
+
+#ifdef CONFIG_PRESERVE_FA_DUMP
+/*
+ * When dump is active but PRESERVE_FA_DUMP is enabled on the kernel,
+ * ensure crash data is preserved in hope that the subsequent memory
+ * preserving kernel boot is going to process this crash data.
+ */
+int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
+{
+	unsigned long dn;
+	const __be32 *prop;
+
+	dn = of_get_flat_dt_subnode_by_name(node, "dump");
+	if (dn == -FDT_ERR_NOTFOUND)
+		return 1;
+
+	/*
+	 * Check if dump has been initiated on last reboot.
+	 */
+	prop = of_get_flat_dt_prop(dn, "mpipl-boot", NULL);
+	if (prop) {
+		u64 addr = 0;
+		s64 ret;
+		const struct opal_fadump_mem_struct *r_opal_fdm_active;
+
+		ret = opal_mpipl_query_tag(OPAL_MPIPL_TAG_KERNEL, &addr);
+		if ((ret != OPAL_SUCCESS) || !addr) {
+			pr_debug("Could not get Kernel metadata (%lld)\n", ret);
+			return 1;
+		}
+
+		/*
+		 * Preserve memory only if kernel memory regions are registered
+		 * with f/w for MPIPL.
+		 */
+		addr = be64_to_cpu(addr);
+		pr_debug("Kernel metadata addr: %llx\n", addr);
+		r_opal_fdm_active = (void *)addr;
+		if (r_opal_fdm_active->registered_regions == 0)
+			return 1;
+
+		ret = opal_mpipl_query_tag(OPAL_MPIPL_TAG_BOOT_MEM, &addr);
+		if ((ret != OPAL_SUCCESS) || !addr) {
+			pr_err("Failed to get boot memory tag (%lld)\n", ret);
+			return 1;
+		}
+
+		/*
+		 * Anything below this address can be used for booting a
+		 * capture kernel or petitboot kernel. Preserve everything
+		 * above this address for processing crashdump.
+		 */
+		fadump_conf->boot_mem_top = be64_to_cpu(addr);
+		pr_debug("Preserve everything above %lx\n",
+			 fadump_conf->boot_mem_top);
+
+		pr_info("Firmware-assisted dump is active.\n");
+		fadump_conf->dump_active = 1;
+	}
+
+	return 1;
+}
+
+#else /* CONFIG_PRESERVE_FA_DUMP */
 static const struct opal_fadump_mem_struct *opal_fdm_active;
 static const struct opal_mpipl_fadump *opal_cpu_metadata;
 static struct opal_fadump_mem_struct *opal_fdm;
@@ -186,6 +250,17 @@ static int opal_fadump_setup_metadata(struct fw_dump *fadump_conf)
 				      fadump_conf->kernel_metadata);
 	if (ret != OPAL_SUCCESS) {
 		pr_err("Failed to set kernel metadata tag!\n");
+		err = -EPERM;
+	}
+
+	/*
+	 * Register boot memory top address with f/w. Should be retrieved
+	 * by a kernel that intends to preserve crash'ed kernel's memory.
+	 */
+	ret = opal_mpipl_register_tag(OPAL_MPIPL_TAG_BOOT_MEM,
+				      fadump_conf->boot_memory_size);
+	if (ret != OPAL_SUCCESS) {
+		pr_err("Failed to set boot memory tag!\n");
 		err = -EPERM;
 	}
 
@@ -654,3 +729,4 @@ int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 
 	return 1;
 }
+#endif /* !CONFIG_PRESERVE_FA_DUMP */
