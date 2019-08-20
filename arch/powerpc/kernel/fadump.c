@@ -114,6 +114,9 @@ int __init early_init_dt_scan_fw_dump(unsigned long node, const char *uname,
 	if (strcmp(uname, "rtas") == 0)
 		return rtas_fadump_dt_scan(&fw_dump, node);
 
+	if (strcmp(uname, "ibm,opal") == 0)
+		return opal_fadump_dt_scan(&fw_dump, node);
+
 	return 0;
 }
 
