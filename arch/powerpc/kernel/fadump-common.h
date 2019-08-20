@@ -83,9 +83,18 @@ struct fadump_crash_info_header {
 	struct cpumask	online_mask;
 };
 
-struct fad_crash_memory_ranges {
+struct fadump_memory_range {
 	unsigned long long	base;
 	unsigned long long	size;
+};
+
+/* fadump memory ranges info */
+struct fadump_mrange_info {
+	char				name[16];
+	struct fadump_memory_range	*mem_ranges;
+	int				mem_ranges_sz;
+	int				mem_range_cnt;
+	int				max_mem_ranges;
 };
 
 /* Platform specific callback functions */
