@@ -101,6 +101,15 @@ firmware versions on PSeries (PowerVM) platform and Power9
 and above systems with recent firmware versions on PowerNV
 (OPAL) platform.
 
+On OPAL based machines, system first boots into an intermittent
+kernel (referred to as petitboot kernel) before booting into the
+capture kernel. This kernel would have minimal kernel and/or
+userspace support to process crash data. Such kernel needs to
+preserve previously crash'ed kernel's memory for the subsequent
+capture kernel boot to process this crash data. Kernel config
+option CONFIG_PRESERVE_FA_DUMP has to be enabled on such kernel
+to ensure that crash data is preserved to process later.
+
 Implementation details:
 -----------------------
 
