@@ -86,4 +86,12 @@ struct fw_dump {
 	unsigned long	nocma:1;
 };
 
+/* Helper functions */
+void *fadump_cpu_notes_buf_alloc(unsigned long size);
+void fadump_cpu_notes_buf_free(unsigned long vaddr, unsigned long size);
+u32 *fadump_regs_to_elf_notes(u32 *buf, struct pt_regs *regs);
+void fadump_update_elfcore_header(struct fw_dump *fadump_config, char *bufp);
+int is_fadump_boot_mem_contiguous(struct fw_dump *fadump_conf);
+int is_fadump_reserved_mem_contiguous(struct fw_dump *fadump_conf);
+
 #endif /* __PPC64_FA_DUMP_INTERNAL_H__ */
