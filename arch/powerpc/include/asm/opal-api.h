@@ -208,7 +208,10 @@
 #define OPAL_HANDLE_HMI2			166
 #define	OPAL_NX_COPROC_INIT			167
 #define OPAL_XIVE_GET_VP_STATE			170
-#define OPAL_LAST				170
+#define OPAL_MPIPL_UPDATE			173
+#define OPAL_MPIPL_REGISTER_TAG			174
+#define OPAL_MPIPL_QUERY_TAG			175
+#define OPAL_LAST				175
 
 #define QUIESCE_HOLD			1 /* Spin all calls at entry */
 #define QUIESCE_REJECT			2 /* Fail all calls with OPAL_BUSY */
@@ -980,6 +983,50 @@ struct opal_sg_list {
 };
 
 /*
+ * Firmware-Assisted Dump (FADump) using MPIPL
+ */
+
+/* MPIPL update operations */
+enum opal_mpipl_ops {
+	OPAL_MPIPL_ADD_RANGE			= 0,
+	OPAL_MPIPL_REMOVE_RANGE			= 1,
+	OPAL_MPIPL_REMOVE_ALL			= 2,
+	OPAL_MPIPL_FREE_PRESERVED_MEMORY	= 3,
+};
+
+/*
+ * Each tag maps to a metadata type. Use these tags to register/query
+ * corresponding metadata address with/from OPAL.
+ */
+enum opal_mpipl_tags {
+	OPAL_MPIPL_TAG_CPU		= 0,
+	OPAL_MPIPL_TAG_OPAL		= 1,
+	OPAL_MPIPL_TAG_KERNEL		= 2,
+	OPAL_MPIPL_TAG_BOOT_MEM		= 3,
+};
+
+/* Preserved memory details */
+struct opal_mpipl_region {
+	__be64	src;
+	__be64	dest;
+	__be64	size;
+};
+
+/* FADump structure format version */
+#define MPIPL_FADUMP_VERSION			0x01
+
+/* Metadata provided by OPAL. */
+struct opal_mpipl_fadump {
+	u8				version;
+	u8				reserved[7];
+	__be32				crashing_pir;
+	__be32				cpu_data_version;
+	__be32				cpu_data_size;
+	__be32				region_cnt;
+	struct opal_mpipl_region	region[];
+} __attribute__((packed));
+
+/*
  * Dump region ID range usable by the OS
  */
 #define OPAL_DUMP_REGION_HOST_START		0x80
@@ -1059,6 +1106,7 @@ enum {
 	OPAL_REBOOT_NORMAL		= 0,
 	OPAL_REBOOT_PLATFORM_ERROR	= 1,
 	OPAL_REBOOT_FULL_IPL		= 2,
+	OPAL_REBOOT_MPIPL		= 3,
 };
 
 /* Argument to OPAL_PCI_TCE_KILL */
