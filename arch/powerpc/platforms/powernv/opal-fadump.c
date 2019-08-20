@@ -23,6 +23,7 @@
 #include "opal-fadump.h"
 
 static const struct opal_fadump_mem_struct *opal_fdm_active;
+static const struct opal_mpipl_fadump *opal_cpu_metadata;
 static struct opal_fadump_mem_struct *opal_fdm;
 
 static int opal_fadump_unregister(struct fw_dump *fadump_conf);
@@ -282,15 +283,122 @@ static void opal_fadump_cleanup(struct fw_dump *fadump_conf)
 		pr_warn("Could not reset (%llu) kernel metadata tag!\n", ret);
 }
 
+static inline void opal_fadump_set_regval_regnum(struct pt_regs *regs,
+						 u32 reg_type, u32 reg_num,
+						 u64 reg_val)
+{
+	if (reg_type == HDAT_FADUMP_REG_TYPE_GPR) {
+		if (reg_num < 32)
+			regs->gpr[reg_num] = reg_val;
+		return;
+	}
+
+	switch (reg_num) {
+	case SPRN_CTR:
+		regs->ctr = reg_val;
+		break;
+	case SPRN_LR:
+		regs->link = reg_val;
+		break;
+	case SPRN_XER:
+		regs->xer = reg_val;
+		break;
+	case SPRN_DAR:
+		regs->dar = reg_val;
+		break;
+	case SPRN_DSISR:
+		regs->dsisr = reg_val;
+		break;
+	case HDAT_FADUMP_REG_ID_NIP:
+		regs->nip = reg_val;
+		break;
+	case HDAT_FADUMP_REG_ID_MSR:
+		regs->msr = reg_val;
+		break;
+	case HDAT_FADUMP_REG_ID_CCR:
+		regs->ccr = reg_val;
+		break;
+	}
+}
+
+static inline void opal_fadump_read_regs(char *bufp, unsigned int regs_cnt,
+					 unsigned int reg_entry_size,
+					 struct pt_regs *regs)
+{
+	int i;
+	struct hdat_fadump_reg_entry *reg_entry;
+
+	memset(regs, 0, sizeof(struct pt_regs));
+
+	for (i = 0; i < regs_cnt; i++, bufp += reg_entry_size) {
+		reg_entry = (struct hdat_fadump_reg_entry *)bufp;
+		opal_fadump_set_regval_regnum(regs,
+					      be32_to_cpu(reg_entry->reg_type),
+					      be32_to_cpu(reg_entry->reg_num),
+					      be64_to_cpu(reg_entry->reg_val));
+	}
+}
+
+static inline bool __init is_thread_core_inactive(u8 core_state)
+{
+	bool is_inactive = false;
+
+	if (core_state == HDAT_FADUMP_CORE_INACTIVE)
+		is_inactive = true;
+
+	return is_inactive;
+}
+
 /*
  * Convert CPU state data saved at the time of crash into ELF notes.
+ *
+ * Each register entry is of 16 bytes, A numerical identifier along with
+ * a GPR/SPR flag in the first 8 bytes and the register value in the next
+ * 8 bytes. For more details refer to F/W documentation.
  */
 static int __init opal_fadump_build_cpu_notes(struct fw_dump *fadump_conf)
 {
 	u32 num_cpus, *note_buf;
 	struct fadump_crash_info_header *fdh = NULL;
+	struct hdat_fadump_thread_hdr *thdr;
+	unsigned long addr;
+	u32 thread_pir;
+	char *bufp;
+	struct pt_regs regs;
+	unsigned int size_of_each_thread;
+	unsigned int regs_offset, regs_cnt, reg_esize;
+	int i;
 
-	num_cpus = 1;
+	fadump_conf->cpu_state_entry_size =
+			be32_to_cpu(opal_cpu_metadata->cpu_data_size);
+	fadump_conf->cpu_state_destination_addr =
+			be64_to_cpu(opal_cpu_metadata->region[0].dest);
+	fadump_conf->cpu_state_data_size =
+			be64_to_cpu(opal_cpu_metadata->region[0].size);
+
+	if ((fadump_conf->cpu_state_destination_addr == 0) ||
+	    (fadump_conf->cpu_state_entry_size == 0)) {
+		pr_err("CPU state data not available for processing!\n");
+		return -ENODEV;
+	}
+
+	size_of_each_thread = fadump_conf->cpu_state_entry_size;
+	num_cpus = (fadump_conf->cpu_state_data_size / size_of_each_thread);
+
+	addr = fadump_conf->cpu_state_destination_addr;
+	bufp = __va(addr);
+
+	/*
+	 * Offset for register entries, entry size and registers count is
+	 * duplicated in every thread header in keeping with HDAT format.
+	 * Use these values from the first thread header.
+	 */
+	thdr = (struct hdat_fadump_thread_hdr *)bufp;
+	regs_offset = (offsetof(struct hdat_fadump_thread_hdr, offset) +
+		       be32_to_cpu(thdr->offset));
+	reg_esize = be32_to_cpu(thdr->esize);
+	regs_cnt  = be32_to_cpu(thdr->ecnt);
+
 	/* Allocate buffer to hold cpu crash notes. */
 	fadump_conf->cpu_notes_buf_size = num_cpus * sizeof(note_buf_t);
 	fadump_conf->cpu_notes_buf_size =
@@ -309,10 +417,53 @@ static int __init opal_fadump_build_cpu_notes(struct fw_dump *fadump_conf)
 	if (fadump_conf->fadumphdr_addr)
 		fdh = __va(fadump_conf->fadumphdr_addr);
 
-	if (fdh && (fdh->crashing_cpu != FADUMP_CPU_UNKNOWN)) {
-		note_buf = fadump_regs_to_elf_notes(note_buf, &(fdh->regs));
-		final_note(note_buf);
+	pr_debug("--------CPU State Data------------\n");
+	pr_debug("NumCpus     : %u\n", num_cpus);
+	pr_debug("\tOffset: %u, Entry size: %u, Cnt: %u\n",
+		 regs_offset, reg_esize, regs_cnt);
 
+	for (i = 0; i < num_cpus; i++, bufp += size_of_each_thread) {
+		thdr = (struct hdat_fadump_thread_hdr *)bufp;
+
+		thread_pir = be32_to_cpu(thdr->pir);
+		pr_debug("%04d) PIR: 0x%x, core state: 0x%02x\n",
+			 (i + 1), thread_pir, thdr->core_state);
+
+		/*
+		 * Register state data of MAX cores is provided by firmware,
+		 * but some of this cores may not be active. So, while
+		 * processing register state data, check core state and
+		 * skip threads that belong to inactive cores.
+		 */
+		if (is_thread_core_inactive(thdr->core_state))
+			continue;
+
+		/*
+		 * If this is kernel initiated crash, crashing_cpu would be set
+		 * appropriately and register data of the crashing CPU saved by
+		 * crashing kernel. Add this saved register data of crashing CPU
+		 * to elf notes and populate the pt_regs for the remaining CPUs
+		 * from register state data provided by firmware.
+		 */
+		if (fdh && (fdh->crashing_cpu == thread_pir)) {
+			note_buf = fadump_regs_to_elf_notes(note_buf,
+							    &fdh->regs);
+			pr_debug("Crashing CPU PIR: 0x%x - R1 : 0x%lx, NIP : 0x%lx\n",
+				 fdh->crashing_cpu, fdh->regs.gpr[1],
+				 fdh->regs.nip);
+			continue;
+		}
+
+		opal_fadump_read_regs((bufp + regs_offset), regs_cnt,
+				      reg_esize, &regs);
+
+		note_buf = fadump_regs_to_elf_notes(note_buf, &regs);
+		pr_debug("CPU PIR: 0x%x - R1 : 0x%lx, NIP : 0x%lx\n",
+			 thread_pir, regs.gpr[1], regs.nip);
+	}
+	final_note(note_buf);
+
+	if (fdh) {
 		pr_debug("Updating elfcore header (%llx) with cpu notes\n",
 			 fdh->elfcorehdr_addr);
 		fadump_update_elfcore_header(fadump_conf,
@@ -327,7 +478,8 @@ static int __init opal_fadump_process(struct fw_dump *fadump_conf)
 	struct fadump_crash_info_header *fdh;
 	int rc = 0;
 
-	if (!opal_fdm_active || !fadump_conf->fadumphdr_addr)
+	if (!opal_fdm_active || !opal_cpu_metadata ||
+	    !fadump_conf->fadumphdr_addr)
 		return -EINVAL;
 
 	/* Validate the fadump crash info header */
@@ -337,13 +489,6 @@ static int __init opal_fadump_process(struct fw_dump *fadump_conf)
 		return -EINVAL;
 	}
 
-	/*
-	 * TODO: To build cpu notes, find a way to map PIR to logical id.
-	 *       Also, we may need different method for pseries and powernv.
-	 *       The currently booted kernel could have a different PIR to
-	 *       logical id mapping. So, try saving info of previous kernel's
-	 *       paca to get the right PIR to logical id mapping.
-	 */
 	rc = opal_fadump_build_cpu_notes(fadump_conf);
 	if (rc)
 		return rc;
@@ -397,6 +542,14 @@ static void opal_fadump_trigger(struct fadump_crash_info_header *fdh,
 {
 	int rc;
 
+	/*
+	 * Unlike on pSeries platform, logical CPU number is not provided
+	 * with architected register state data. So, store the crashing
+	 * CPU's PIR instead to plug the appropriate register data for
+	 * crashing CPU in the vmcore file.
+	 */
+	fdh->crashing_cpu = (u32)mfspr(SPRN_PIR);
+
 	rc = opal_cec_reboot2(OPAL_REBOOT_MPIPL, msg);
 	if (rc == OPAL_UNSUPPORTED) {
 		pr_emerg("Reboot type %d not supported.\n",
@@ -449,6 +602,7 @@ int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 		u64 addr = 0;
 		s64 ret;
 		const struct opal_fadump_mem_struct *r_opal_fdm_active;
+		const struct opal_mpipl_fadump *r_opal_cpu_metadata;
 
 		ret = opal_mpipl_query_tag(OPAL_MPIPL_TAG_KERNEL, &addr);
 		if ((ret != OPAL_SUCCESS) || !addr) {
@@ -470,6 +624,26 @@ int __init opal_fadump_dt_scan(struct fw_dump *fadump_conf, ulong node)
 		/* Kernel regions not registered with f/w for MPIPL */
 		if (r_opal_fdm_active->registered_regions == 0) {
 			opal_fdm_active = NULL;
+			return 1;
+		}
+
+		ret = opal_mpipl_query_tag(OPAL_MPIPL_TAG_CPU, &addr);
+		if ((ret != OPAL_SUCCESS) || !addr) {
+			pr_err("Failed to get CPU metadata (%lld)\n", ret);
+			return 1;
+		}
+
+		addr = be64_to_cpu(addr);
+		pr_debug("CPU metadata addr: %llx\n", addr);
+
+		opal_cpu_metadata = __va(addr);
+		r_opal_cpu_metadata = (void *)addr;
+		fadump_conf->cpu_state_data_version =
+			be32_to_cpu(r_opal_cpu_metadata->cpu_data_version);
+		if (fadump_conf->cpu_state_data_version !=
+		    HDAT_FADUMP_CPU_DATA_VERSION) {
+			pr_err("CPU data format version (%lu) mismatch!\n",
+			       fadump_conf->cpu_state_data_version);
 			return 1;
 		}
 

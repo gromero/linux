@@ -30,4 +30,43 @@ struct opal_fadump_mem_struct {
 	struct opal_mpipl_region	rgn[OPAL_FADUMP_MAX_MEM_REGS];
 } __attribute__((packed));
 
+/*
+ * CPU state data is provided by f/w. Below are the definitions
+ * provided in HDAT spec. Refer to latest HDAT specification for
+ * any update to this format.
+ */
+
+#define HDAT_FADUMP_CPU_DATA_VERSION		1
+
+#define HDAT_FADUMP_CORE_INACTIVE		(0x0F)
+
+/* HDAT thread header for register entries */
+struct hdat_fadump_thread_hdr {
+	__be32  pir;
+	/* 0x00 - 0x0F - The corresponding stop state of the core */
+	u8      core_state;
+	u8      reserved[3];
+
+	__be32	offset;	/* Offset to Register Entries array */
+	__be32	ecnt;	/* Number of entries */
+	__be32	esize;	/* Alloc size of each array entry in bytes */
+	__be32	eactsz;	/* Actual size of each array entry in bytes */
+} __attribute__((packed));
+
+/* Register types populated by f/w */
+#define HDAT_FADUMP_REG_TYPE_GPR		0x01
+#define HDAT_FADUMP_REG_TYPE_SPR		0x02
+
+/* ID numbers used by f/w while populating certain registers */
+#define HDAT_FADUMP_REG_ID_NIP			0x7D0
+#define HDAT_FADUMP_REG_ID_MSR			0x7D1
+#define HDAT_FADUMP_REG_ID_CCR			0x7D2
+
+/* HDAT register entry. */
+struct hdat_fadump_reg_entry {
+	__be32		reg_type;
+	__be32		reg_num;
+	__be64		reg_val;
+} __attribute__((packed));
+
 #endif /* __PPC64_OPAL_FA_DUMP_H__ */

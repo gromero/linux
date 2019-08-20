@@ -98,7 +98,11 @@ struct fw_dump {
 	/* cmd line option during boot */
 	unsigned long	reserve_bootvar;
 
+	unsigned long	cpu_state_destination_addr;
+	unsigned long	cpu_state_data_version;
+	unsigned long	cpu_state_entry_size;
 	unsigned long	cpu_state_data_size;
+
 	unsigned long	hpte_region_size;
 
 	unsigned long	boot_mem_dest_addr;
