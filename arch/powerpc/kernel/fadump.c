@@ -238,7 +238,8 @@ static inline unsigned long fadump_calculate_reserve_size(void)
 	if (memory_limit && size > memory_limit)
 		size = memory_limit;
 
-	return (size > MIN_BOOT_MEM ? size : MIN_BOOT_MEM);
+	return (size > fw_dump.ops->fadump_get_bootmem_min() ? size :
+		fw_dump.ops->fadump_get_bootmem_min());
 }
 
 /*
@@ -291,6 +292,14 @@ int __init fadump_reserve_mem(void)
 				ALIGN(fw_dump.boot_memory_size,
 							FADUMP_CMA_ALIGNMENT);
 #endif
+
+		if (fw_dump.boot_memory_size <
+		    fw_dump.ops->fadump_get_bootmem_min()) {
+			pr_err("Can't enable fadump with boot memory size (0x%lx) less than 0x%lx\n",
+			       fw_dump.boot_memory_size,
+			       fw_dump.ops->fadump_get_bootmem_min());
+			goto error_out;
+		}
 	}
 
 	/*

@@ -12,6 +12,15 @@
 #ifndef __PPC64_RTAS_FA_DUMP_H__
 #define __PPC64_RTAS_FA_DUMP_H__
 
+/*
+ * On some Power systems where RMO is 128MB, it still requires minimum of
+ * 256MB for kernel to boot successfully. When kdump infrastructure is
+ * configured to save vmcore over network, we run into OOM issue while
+ * loading modules related to network setup. Hence we need additional 64M
+ * of memory to avoid OOM issue.
+ */
+#define RTAS_FADUMP_MIN_BOOT_MEM	((0x1UL << 28) + (0x1UL << 26))
+
 /* Firmware provided dump sections */
 #define RTAS_FADUMP_CPU_STATE_DATA	0x0001
 #define RTAS_FADUMP_HPTE_REGION		0x0002
