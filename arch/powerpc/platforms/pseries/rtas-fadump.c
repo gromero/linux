@@ -235,6 +235,8 @@ static int rtas_fadump_invalidate(struct fw_dump *fadump_conf)
 	return 0;
 }
 
+static void rtas_fadump_cleanup(struct fw_dump *fadump_conf) { }
+
 #define RTAS_FADUMP_GPR_MASK			0xffffff0000000000
 static inline int rtas_fadump_gpr_index(u64 id)
 {
@@ -508,6 +510,7 @@ static struct fadump_ops rtas_fadump_ops = {
 	.fadump_register		= rtas_fadump_register,
 	.fadump_unregister		= rtas_fadump_unregister,
 	.fadump_invalidate		= rtas_fadump_invalidate,
+	.fadump_cleanup			= rtas_fadump_cleanup,
 	.fadump_process			= rtas_fadump_process,
 	.fadump_region_show		= rtas_fadump_region_show,
 	.fadump_trigger			= rtas_fadump_trigger,

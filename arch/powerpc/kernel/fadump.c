@@ -830,6 +830,8 @@ void fadump_cleanup(void)
 		fw_dump.ops->fadump_unregister(&fw_dump);
 		free_crash_memory_ranges();
 	}
+
+	fw_dump.ops->fadump_cleanup(&fw_dump);
 }
 
 static void fadump_free_reserved_memory(unsigned long start_pfn,
