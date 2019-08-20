@@ -90,6 +90,10 @@ static const struct opal_fadump_mem_struct *opal_fdm_active;
 static const struct opal_mpipl_fadump *opal_cpu_metadata;
 static struct opal_fadump_mem_struct *opal_fdm;
 
+#ifdef CONFIG_OPAL_CORE
+extern bool kernel_initiated;
+#endif
+
 static int opal_fadump_unregister(struct fw_dump *fadump_conf);
 
 static void opal_fadump_update_config(struct fw_dump *fadump_conf,
@@ -358,72 +362,6 @@ static void opal_fadump_cleanup(struct fw_dump *fadump_conf)
 		pr_warn("Could not reset (%llu) kernel metadata tag!\n", ret);
 }
 
-static inline void opal_fadump_set_regval_regnum(struct pt_regs *regs,
-						 u32 reg_type, u32 reg_num,
-						 u64 reg_val)
-{
-	if (reg_type == HDAT_FADUMP_REG_TYPE_GPR) {
-		if (reg_num < 32)
-			regs->gpr[reg_num] = reg_val;
-		return;
-	}
-
-	switch (reg_num) {
-	case SPRN_CTR:
-		regs->ctr = reg_val;
-		break;
-	case SPRN_LR:
-		regs->link = reg_val;
-		break;
-	case SPRN_XER:
-		regs->xer = reg_val;
-		break;
-	case SPRN_DAR:
-		regs->dar = reg_val;
-		break;
-	case SPRN_DSISR:
-		regs->dsisr = reg_val;
-		break;
-	case HDAT_FADUMP_REG_ID_NIP:
-		regs->nip = reg_val;
-		break;
-	case HDAT_FADUMP_REG_ID_MSR:
-		regs->msr = reg_val;
-		break;
-	case HDAT_FADUMP_REG_ID_CCR:
-		regs->ccr = reg_val;
-		break;
-	}
-}
-
-static inline void opal_fadump_read_regs(char *bufp, unsigned int regs_cnt,
-					 unsigned int reg_entry_size,
-					 struct pt_regs *regs)
-{
-	int i;
-	struct hdat_fadump_reg_entry *reg_entry;
-
-	memset(regs, 0, sizeof(struct pt_regs));
-
-	for (i = 0; i < regs_cnt; i++, bufp += reg_entry_size) {
-		reg_entry = (struct hdat_fadump_reg_entry *)bufp;
-		opal_fadump_set_regval_regnum(regs,
-					      be32_to_cpu(reg_entry->reg_type),
-					      be32_to_cpu(reg_entry->reg_num),
-					      be64_to_cpu(reg_entry->reg_val));
-	}
-}
-
-static inline bool __init is_thread_core_inactive(u8 core_state)
-{
-	bool is_inactive = false;
-
-	if (core_state == HDAT_FADUMP_CORE_INACTIVE)
-		is_inactive = true;
-
-	return is_inactive;
-}
-
 /*
  * Convert CPU state data saved at the time of crash into ELF notes.
  *
@@ -530,7 +468,7 @@ static int __init opal_fadump_build_cpu_notes(struct fw_dump *fadump_conf)
 		}
 
 		opal_fadump_read_regs((bufp + regs_offset), regs_cnt,
-				      reg_esize, &regs);
+				      reg_esize, true, &regs);
 
 		note_buf = fadump_regs_to_elf_notes(note_buf, &regs);
 		pr_debug("CPU PIR: 0x%x - R1 : 0x%lx, NIP : 0x%lx\n",
@@ -563,6 +501,18 @@ static int __init opal_fadump_process(struct fw_dump *fadump_conf)
 		pr_err("Crash info header is not valid.\n");
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_OPAL_CORE
+	/*
+	 * If this is a kernel initiated crash, crashing_cpu would be set
+	 * appropriately and register data of the crashing CPU saved by
+	 * crashing kernel. Add this saved register data of crashing CPU
+	 * to elf notes and populate the pt_regs for the remaining CPUs
+	 * from register state data provided by firmware.
+	 */
+	if (fdh->crashing_cpu != FADUMP_CPU_UNKNOWN)
+		kernel_initiated = true;
+#endif
 
 	rc = opal_fadump_build_cpu_notes(fadump_conf);
 	if (rc)
