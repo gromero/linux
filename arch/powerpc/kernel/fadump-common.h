@@ -80,6 +80,9 @@ struct fad_crash_memory_ranges {
 	unsigned long long	size;
 };
 
+/* Platform specific callback functions */
+struct fadump_ops;
+
 /* Firmware-assisted dump configuration details. */
 struct fw_dump {
 	unsigned long	reserve_dump_area_start;
@@ -102,6 +105,20 @@ struct fw_dump {
 	unsigned long	dump_active:1;
 	unsigned long	dump_registered:1;
 	unsigned long	nocma:1;
+
+	struct fadump_ops		*ops;
+};
+
+struct fadump_ops {
+	ulong	(*fadump_init_mem_struct)(struct fw_dump *fadump_config);
+	int	(*fadump_register)(struct fw_dump *fadump_config);
+	int	(*fadump_unregister)(struct fw_dump *fadump_config);
+	int	(*fadump_invalidate)(struct fw_dump *fadump_config);
+	int	(*fadump_process)(struct fw_dump *fadump_config);
+	void	(*fadump_region_show)(struct fw_dump *fadump_config,
+				      struct seq_file *m);
+	void	(*fadump_trigger)(struct fadump_crash_info_header *fdh,
+				  const char *msg);
 };
 
 /* Helper functions */
@@ -111,5 +128,14 @@ u32 *fadump_regs_to_elf_notes(u32 *buf, struct pt_regs *regs);
 void fadump_update_elfcore_header(struct fw_dump *fadump_config, char *bufp);
 int is_fadump_boot_mem_contiguous(struct fw_dump *fadump_conf);
 int is_fadump_reserved_mem_contiguous(struct fw_dump *fadump_conf);
+
+#ifdef CONFIG_PPC_PSERIES
+extern int rtas_fadump_dt_scan(struct fw_dump *fadump_config, ulong node);
+#else
+static inline int rtas_fadump_dt_scan(struct fw_dump *fadump_config, ulong node)
+{
+	return 1;
+}
+#endif
 
 #endif /* __PPC64_FA_DUMP_INTERNAL_H__ */
