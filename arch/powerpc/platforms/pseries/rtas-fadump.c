@@ -121,6 +121,21 @@ static ulong rtas_fadump_init_mem_struct(struct fw_dump *fadump_conf)
 	return addr;
 }
 
+/*
+ * On this platform, the metadata struture is passed while registering
+ * for FADump and the same is returned by f/w in capture kernel.
+ * No additional provision to setup kernel metadata separately.
+ */
+static ulong rtas_fadump_get_metadata_size(void)
+{
+	return 0;
+}
+
+static int rtas_fadump_setup_metadata(struct fw_dump *fadump_conf)
+{
+	return 0;
+}
+
 static int rtas_fadump_register(struct fw_dump *fadump_conf)
 {
 	int rc, err = -EIO;
@@ -486,9 +501,10 @@ static void rtas_fadump_trigger(struct fadump_crash_info_header *fdh,
 	rtas_os_term((char *)msg);
 }
 
-
 static struct fadump_ops rtas_fadump_ops = {
 	.fadump_init_mem_struct		= rtas_fadump_init_mem_struct,
+	.fadump_get_metadata_size	= rtas_fadump_get_metadata_size,
+	.fadump_setup_metadata		= rtas_fadump_setup_metadata,
 	.fadump_register		= rtas_fadump_register,
 	.fadump_unregister		= rtas_fadump_unregister,
 	.fadump_invalidate		= rtas_fadump_invalidate,

@@ -100,6 +100,8 @@ struct fw_dump {
 	unsigned long	cpu_notes_buf;
 	unsigned long	cpu_notes_buf_size;
 
+	u64		kernel_metadata;
+
 	int		ibm_configure_kernel_dump;
 
 	unsigned long	fadump_enabled:1;
@@ -113,6 +115,8 @@ struct fw_dump {
 
 struct fadump_ops {
 	ulong	(*fadump_init_mem_struct)(struct fw_dump *fadump_config);
+	ulong	(*fadump_get_metadata_size)(void);
+	int	(*fadump_setup_metadata)(struct fw_dump *fadump_config);
 	int	(*fadump_register)(struct fw_dump *fadump_config);
 	int	(*fadump_unregister)(struct fw_dump *fadump_config);
 	int	(*fadump_invalidate)(struct fw_dump *fadump_config);
