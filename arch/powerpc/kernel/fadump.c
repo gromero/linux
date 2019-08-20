@@ -32,6 +32,8 @@
 #include <asm/fadump.h>
 #include <asm/setup.h>
 
+#include "fadump-common.h"
+
 static struct fw_dump fw_dump;
 static struct fadump_mem_struct fdm;
 static const struct fadump_mem_struct *fdm_active;
