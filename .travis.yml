@@ -10,9 +10,6 @@ env:
 
 matrix:
   include:
-    - os:   linux
-      env:  TARGET=kernel SUBARCH=ppc64le IMAGE=ubuntu-19.04 DEFCONFIG=ppc64le_defconfig
-      name: "kernel: ppc64le (PPC_BOOK3S_64 && LITTLE_ENDIAN)"
     - os:   linux-ppc64le
       env:  TARGET=kernel SUBARCH=ppc64le IMAGE=ubuntu-19.04 DEFCONFIG=ppc64le_defconfig
       name: "kernel: ppc64le (native) (PPC_BOOK3S_64 && LITTLE_ENDIAN)"
