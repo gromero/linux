@@ -103,14 +103,6 @@ long sys_switch_endian(void);
 notrace unsigned int __check_irq_replay(void);
 void notrace restore_interrupts(void);
 
-/* ptrace */
-long do_syscall_trace_enter(struct pt_regs *regs);
-void do_syscall_trace_leave(struct pt_regs *regs);
-
-/* process */
-void restore_math(struct pt_regs *regs);
-void restore_tm_state(struct pt_regs *regs);
-
 /* prom_init (OpenFirmware) */
 unsigned long __init prom_init(unsigned long r3, unsigned long r4,
 			       unsigned long pp,
@@ -120,9 +112,6 @@ unsigned long __init prom_init(unsigned long r3, unsigned long r4,
 /* setup */
 void __init early_setup(unsigned long dt_ptr);
 void early_setup_secondary(void);
-
-/* time */
-void accumulate_stolen_time(void);
 
 /* misc runtime */
 extern u64 __bswapdi2(u64);
