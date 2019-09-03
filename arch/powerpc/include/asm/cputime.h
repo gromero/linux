@@ -60,6 +60,30 @@ static inline void arch_vtime_task_switch(struct task_struct *prev)
 }
 #endif
 
+static inline void account_cpu_user_entry(void)
+{
+	unsigned long tb = mftb();
+	struct cpu_accounting_data *acct = get_accounting(current);
+
+	acct->utime += (tb - acct->starttime_user);
+	acct->starttime = tb;
+}
+static inline void account_cpu_user_exit(void)
+{
+	unsigned long tb = mftb();
+	struct cpu_accounting_data *acct = get_accounting(current);
+
+	acct->stime += (tb - acct->starttime);
+	acct->starttime_user = tb;
+}
+
 #endif /* __KERNEL__ */
+#else /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+static inline void account_cpu_user_entry(void)
+{
+}
+static inline void account_cpu_user_exit(void)
+{
+}
 #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
 #endif /* __POWERPC_CPUTIME_H */
