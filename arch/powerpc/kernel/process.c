@@ -875,10 +875,10 @@ static void tm_reclaim_thread(struct thread_struct *thr, uint8_t cause)
 	 * not. So either this will write the checkpointed registers,
 	 * or reclaim will. Similarly for VMX.
 	 */
-	if ((thr->ckpt_regs.msr & MSR_FP) == 0)
+	if ((thr->ckpt_regs->msr & MSR_FP) == 0)
 		memcpy(&thr->ckfp_state, &thr->fp_state,
 		       sizeof(struct thread_fp_state));
-	if ((thr->ckpt_regs.msr & MSR_VEC) == 0)
+	if ((thr->ckpt_regs->msr & MSR_VEC) == 0)
 		memcpy(&thr->ckvr_state, &thr->vr_state,
 		       sizeof(struct thread_vr_state));
 }
