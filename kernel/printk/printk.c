@@ -1133,6 +1133,15 @@ static int __init log_buf_len_setup(char *str)
 }
 early_param("log_buf_len", log_buf_len_setup);
 
+static int __init log_buf_loc(char *str)
+{
+	if(!strcmp("on",str))
+		printk("__log_buf @ %px (EA, not RA)\n", __log_buf);
+
+	return 0;
+}
+early_param("log_buf_loc", log_buf_loc);
+
 #ifdef CONFIG_SMP
 #define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
 
