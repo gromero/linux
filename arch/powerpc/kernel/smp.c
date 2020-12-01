@@ -1371,6 +1371,9 @@ static struct sched_domain_topology_level power9_topology[] = {
 
 void __init smp_cpus_done(unsigned int max_cpus)
 {
+	int i;
+	uint64_t *paca_rb_ptr;
+
 	/*
 	 * We are running pinned to the boot CPU, see rest_init().
 	 */
@@ -1381,6 +1384,13 @@ void __init smp_cpus_done(unsigned int max_cpus)
 		smp_ops->bringup_done();
 
 	dump_numa_cpu_topology();
+
+	for (i = 0; i < nr_cpu_ids; i++) {
+		int num_args = 4;
+		paca_rb_ptr = &(((struct paca_struct *)paca_ptrs[i])->rb[0]);
+		printk("CPU%d: paca address = 0x%px\n", i, paca_rb_ptr);
+		pacaprint(paca_rb_ptr, 1 /*func type*/, num_args /*num args*/, i, 0xbeef0001, 0xbeef0002, 0xbeef0003);
+	}
 
 #ifdef CONFIG_SCHED_SMT
 	if (has_big_cores) {

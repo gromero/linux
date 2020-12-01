@@ -69,7 +69,8 @@ kvm-hv-y += \
 	book3s_hv_interrupts.o \
 	book3s_64_mmu_hv.o \
 	book3s_64_mmu_radix.o \
-	book3s_hv_nested.o
+	book3s_hv_nested.o \
+	pacaprint.o
 
 kvm-hv-$(CONFIG_PPC_UV) += \
 	book3s_hv_uvmem.o

@@ -313,6 +313,22 @@ void kvmppc_radix_tlbie_page(struct kvm *kvm, unsigned long addr,
 	addr &= ~(psize - 1);
 
 	if (!kvmhv_on_pseries()) {
+		// XXX: Code below have never been tested
+		// Merely it compiles =)
+		uint64_t *rb;
+		uint64_t rb_index;
+		int args = 4;
+
+		rb = get_paca()->rb;
+		rb_index = get_paca()->rb_index;
+
+		if (rb_index + 1 + 2 + args >= RING_BUFFER_SIZE)
+			rb_index = 0;
+
+		pacaprint(rb, 1, args, raw_smp_processor_id(), lpid, addr, psize);
+		get_paca()->rb_index = rb_index + 1 + 2 + args;
+
+		printk("KVM: CPU:%d LPID:%x TLBIE flush TLB for gRA:0x%016lx page size:%lx\n", raw_smp_processor_id(), lpid, addr, psize);
 		radix__flush_tlb_lpid_page(lpid, addr, psize);
 		return;
 	}

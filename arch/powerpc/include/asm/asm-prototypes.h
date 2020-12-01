@@ -139,6 +139,9 @@ void tm_enable(void);
 void tm_disable(void);
 void tm_abort(uint8_t cause);
 
+/* PACA print */
+void pacaprint(uint64_t *buf, uint64_t type, uint64_t func, ...);
+
 struct kvm_vcpu;
 void _kvmppc_restore_tm_pr(struct kvm_vcpu *vcpu, u64 guest_msr);
 void _kvmppc_save_tm_pr(struct kvm_vcpu *vcpu, u64 guest_msr);

@@ -54,6 +54,8 @@ extern unsigned int debug_smp_processor_id(void); /* from linux/smp.h */
 struct task_struct;
 struct rtas_args;
 
+#define RING_BUFFER_SIZE 32*1024 /* 32 MB */
+
 /*
  * Defines the layout of the paca.
  *
@@ -273,6 +275,8 @@ struct paca_struct {
 #ifdef CONFIG_MMIOWB
 	struct mmiowb_state mmiowb_state;
 #endif
+	uint64_t rb[RING_BUFFER_SIZE];
+	int rb_index;
 } ____cacheline_aligned;
 
 extern void copy_mm_to_paca(struct mm_struct *mm);
