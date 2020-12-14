@@ -20,3 +20,4 @@ tm-unavailable
 tm-trap
 tm-sigreturn
 tm-poison
+tm-no-tm
